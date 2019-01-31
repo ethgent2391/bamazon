@@ -1,6 +1,7 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer")
 var fs = require("fs")
+var clear = require("clear")
 var product = "";
 var buycount;
 var stockCount;
@@ -24,6 +25,7 @@ var connection = mysql.createConnection({
   });
 
   function bamazon_customer() {
+    clear();
     inquirer
       .prompt({
         name: "shop",
@@ -64,10 +66,7 @@ var connection = mysql.createConnection({
       if (err) throw err;
       for (i = 0; i < res.length; i++){
           productlist.push(res[i].product_name)
-        };
-        productlist.push(new inquirer.Separator())
-        productlist.push("return")
-        productlist.push(new inquirer.Separator())
+        }
       inquirer
         .prompt({
           name: "shopall",
@@ -147,7 +146,8 @@ var connection = mysql.createConnection({
         });
         });
        });
-      }
+  }
+
   function buyconfirm(){
      inquirer
        .prompt({
@@ -183,14 +183,23 @@ var connection = mysql.createConnection({
             bamazon_customer();
           }
       })
-    }
+  }
+
   function updateinventory(){
     connection.query("UPDATE bamazon.products SET stock_quantity = stock_quantity - "+buycount+" WHERE product_name='"+product+"';", function(err, res) {
       if (err) throw err
-      console.log(product+" Stock Updated!")
-      bamazon_customer();
+
+
+      
+    })
+    connection.query("SELECT * FROM bamazon.products WHERE UPPER(product_name) LIKE UPPER('" + product + "%');", function(err, res) {
+      if (err) throw err
+      stockCount = res[0].stock_quantity
+      console.log(product+" Stock Updated! \n " +stockCount+" "+product+" Left In-Stock." )
+      setTimeout(bamazon_customer, 3500)
     })
   }
+
   function validateInput(value) {
     var integer = Number.isInteger(parseFloat(value));
     var sign = Math.sign(value);
