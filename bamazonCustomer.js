@@ -1,6 +1,7 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer")
 var fs = require("fs")
+var product = "";
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -29,22 +30,15 @@ var connection = mysql.createConnection({
         message: "Welcome to Handy-Hardware! what would you like to do?",
         choices: [
           "Browse all tools",
-          "Find tools by brand",
           "Find tools name",
           "Enter item ID",
-          "checkout",
           "exit"
         ]
       })
       .then(function(answer) {
         switch (answer.shop) {
         case "Browse all tools":
-        console.log("poop")
           browse();
-          break;
-  
-        case "Find tools by brand":
-          brand_list();
           break;
   
         case "Find tools name":
@@ -85,6 +79,7 @@ var connection = mysql.createConnection({
             switch (answer.shopall) {
               case productlist[i]:
               console.log("you've selected: " + res[i].product_name+"\n price: "+res[i].price+"\n Number Available: "+res[i].stock_quantity)
+              product = res[i].product_name
               buyconfirm();
               break;
             }
@@ -94,34 +89,7 @@ var connection = mysql.createConnection({
 
     })
   };
-  function brand_list(){
-    connection.query("SELECT * FROM products", function(err, res) {
-      if (err) throw err;
-      var brandlist = [];
-      for (i = 0; i < res.length; i++){
-         if (brandlist.indexOf(res[i].manufacturer) == -1){
-            brandlist.push(res[i].manufacturer)
-         }
-        };
-      inquirer
-        .prompt({
-          name: "shopbrand",
-          type: "list",
-          message: "Please select a brand:",
-          choices: brandlist  
-        })
-        .then(function(answer) {
-          for (i = 0; i < brandlist.length; i++){
-            switch (answer.shopbrand) {
-              case brandlistlist[i]:
-              
-              break;
-            }
-          }
-        });
-    })
-  }
-
+  
   function id_srch(){
     inquirer
     .prompt({
@@ -134,6 +102,7 @@ var connection = mysql.createConnection({
        connection.query("SELECT * FROM products WHERE item_id='" + answer.id + "';", function(err, res) {
          if (err) throw err
          console.log("you've selected: " + res[0].product_name+"\n price: "+res[0].price+"\n Number Available: "+res[0].stock_quantity)
+         product = res[0].product_name
          buyconfirm();
         });
        });
@@ -169,6 +138,7 @@ var connection = mysql.createConnection({
             switch (answer.srchResult) {
               case resultlist[i]:
               console.log("you've selected: " + res[i].product_name+"\n price: "+res[i].price+"\n Number Available: "+res[i].stock_quantity)
+              product = res[i].product_name
               buyconfirm();
               break;
             }
@@ -177,7 +147,7 @@ var connection = mysql.createConnection({
         });
        });
       }
-   function buyconfirm(){
+  function buyconfirm(){
      inquirer
        .prompt({
          name: "buy",
@@ -188,6 +158,7 @@ var connection = mysql.createConnection({
          console.log(answer)
           if (answer.buy == true){
               console.log("sold")
+              updateinventory();
           }
           else {
             console.log("Cancelled \n Returning to main menu")
@@ -195,7 +166,11 @@ var connection = mysql.createConnection({
           }
       })
     }
-  function brand_srch(){
-    
+  function updateinventory(){
+    connection.query("UPDATE bamazon.products SET stock_quantity = stock_quantity - 1 WHERE product_name='"+product+"';", function(err, res) {
+      if (err) throw err
+      console.log(product+" Stock Updated!")
+      bamazon_customer();
+    })
   }
-
+ 
