@@ -2,7 +2,8 @@ var mysql = require("mysql");
 var inquirer = require("inquirer")
 var fs = require("fs")
 var product = "";
-
+var buycount;
+var stockCount;
 var connection = mysql.createConnection({
     host: "localhost",
   
@@ -80,6 +81,7 @@ var connection = mysql.createConnection({
               case productlist[i]:
               console.log("you've selected: " + res[i].product_name+"\n price: "+res[i].price+"\n Number Available: "+res[i].stock_quantity)
               product = res[i].product_name
+              stockCount = res[i].stock_quantity
               buyconfirm();
               break;
             }
@@ -103,6 +105,7 @@ var connection = mysql.createConnection({
          if (err) throw err
          console.log("you've selected: " + res[0].product_name+"\n price: "+res[0].price+"\n Number Available: "+res[0].stock_quantity)
          product = res[0].product_name
+         stockCount = res[0].stock_quantity
          buyconfirm();
         });
        });
@@ -123,9 +126,6 @@ var connection = mysql.createConnection({
          for (i = 0; i < res.length; i++){
           resultlist.push(res[i].product_name)
         };
-        resultlist.push(new inquirer.Separator())
-        resultlist.push("return")
-        resultlist.push(new inquirer.Separator())
         inquirer
         .prompt({
           name: "srchResult",
@@ -139,6 +139,7 @@ var connection = mysql.createConnection({
               case resultlist[i]:
               console.log("you've selected: " + res[i].product_name+"\n price: "+res[i].price+"\n Number Available: "+res[i].stock_quantity)
               product = res[i].product_name
+              stockCount = res[i].stock_quantity
               buyconfirm();
               break;
             }
@@ -157,8 +158,25 @@ var connection = mysql.createConnection({
        .then(function(answer) {
          console.log(answer)
           if (answer.buy == true){
-              console.log("sold")
-              updateinventory();
+            inquirer
+              .prompt({
+                name: "howmany",
+                type: "input",
+                message: "How many "+product+ " would you like to buy?",
+                validate: validateInput,
+                filter: Number
+               
+              })
+              .then(function(answer) {
+                buycount = answer.howmany
+                  if (buycount > stockCount){
+                    console.log("sorry we only have: "+stockCount+" in stock");
+                    buyconfirm();
+                  }else{
+                  console.log("sold")
+                  updateinventory();
+                  }
+              })
           }
           else {
             console.log("Cancelled \n Returning to main menu")
@@ -167,10 +185,20 @@ var connection = mysql.createConnection({
       })
     }
   function updateinventory(){
-    connection.query("UPDATE bamazon.products SET stock_quantity = stock_quantity - 1 WHERE product_name='"+product+"';", function(err, res) {
+    connection.query("UPDATE bamazon.products SET stock_quantity = stock_quantity - "+buycount+" WHERE product_name='"+product+"';", function(err, res) {
       if (err) throw err
       console.log(product+" Stock Updated!")
       bamazon_customer();
     })
+  }
+  function validateInput(value) {
+    var integer = Number.isInteger(parseFloat(value));
+    var sign = Math.sign(value);
+  
+    if (integer && (sign === 1)) {
+      return true;
+    } else {
+      return 'Please enter a whole non-zero number.';
+    }
   }
  
